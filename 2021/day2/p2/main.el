@@ -1,4 +1,4 @@
-#!/usr/bin/emacs --script
+#!/usr/bin/env emacs --script
 
 (setq debug-on-error t)
 
