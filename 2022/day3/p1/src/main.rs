@@ -26,9 +26,8 @@ fn main() -> std::io::Result<()> {
     let file = File::open(args.filename)?;
     for line in BufReader::new(file).lines() {
         if let Ok(line) = line {
-            let line_slice = line.strip_suffix("\n").unwrap_or(line.as_str());
-            let left: HashSet<char> = line_slice[0..(line.len()/2)].chars().into_iter().collect();
-            let right: HashSet<char> = line_slice[(line.len()/2)..].chars().into_iter().collect();
+            let left: HashSet<char> = line[0..(line.len()/2)].chars().into_iter().collect();
+            let right: HashSet<char> = line[(line.len()/2)..].chars().into_iter().collect();
 
             let common = left.intersection(&right).into_iter().next().unwrap();
             sum += get_priority(*common);

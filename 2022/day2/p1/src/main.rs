@@ -33,16 +33,16 @@ fn main() -> std::io::Result<()> {
     let file = File::open(args.filename)?;
     for line in BufReader::new(file).lines() {
         if let Ok(line) = line {
-            let values = line.strip_suffix("\n").unwrap_or(line.as_str())
-            .split(" ")
-            .map(|x| {
-                match x {
-                    "A" | "X" => Hand::Rock,
-                    "B" | "Y" => Hand::Paper,
-                    "C" | "Z" => Hand::Scissors,
-                    _ => panic!("Unexpected value {}", x)
-                }
-            })
+            let values = line
+                .split(" ")
+                .map(|x| {
+                    match x {
+                        "A" | "X" => Hand::Rock,
+                        "B" | "Y" => Hand::Paper,
+                        "C" | "Z" => Hand::Scissors,
+                        _ => panic!("Unexpected value {}", x)
+                    }
+                })
             .collect::<Vec<Hand>>() ;
             sum += run_match(values[0], values[1])
         }

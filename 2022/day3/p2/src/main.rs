@@ -29,7 +29,7 @@ fn main() -> std::io::Result<()> {
     for line in BufReader::new(file).lines() {
         if let Ok(line) = line {
             if linebuf.len() < 3 {
-                let chars: HashSet<char> = line.strip_suffix("\n").unwrap_or(line.as_str()).chars().into_iter().collect();
+                let chars: HashSet<char> = line.chars().into_iter().collect();
                 linebuf.push(chars);
             }
 
