@@ -1,6 +1,5 @@
 use std::borrow::Borrow;
 use std::io::{BufReader, Result, BufRead};
-use std::cell::RefCell;
 use std::rc::{Rc,Weak};
 
 use clap::Parser;
@@ -18,40 +17,43 @@ trait Node {
 
 struct Directory {
     name: String,
-    parent: RefCell<Weak<Directory>>,
-    children: Vec<Box<dyn Node>>
+    parent: Weak<Directory>,
+    directories: Vec<Rc<Directory>>
 }
 
 impl Directory {
-    fn new(name: String, parent: Option<Rc<Directory>>) -> Self {
-        let parent: RefCell<Weak<Directory>> = match parent {
-            None => RefCell::new(Weak::new()),
-            Some(parent) => {
-                RefCell::new(Rc::downgrade(&parent))
-            }
+    fn new(name: String, parent: Option<Weak<Directory>>) -> Self {
+        let parent: Weak<Directory> = match parent {
+            None => Weak::new(),
+            Some(parent) => parent
         };
 
         Self {
             name,
             parent,
-            children: Vec::new()
+            directories: Vec::new()
         }
     }
 
     fn path(&self) -> String {
-        let mut vec_path: Vec<String> = vec![];
+        let mut vec_path: Vec<String> = vec![self.name().clone()];
+        let mut current = self.parent.upgrade();
 
-        println!("{:?}", self.parent.borrow().upgrade().unwrap().name());
+        while let Some(parent) = &current {
+            vec_path.insert(0, parent.name().clone());
+            current = parent.parent.upgrade();
+        }
 
-        "".into()
+        format!("/{}", vec_path[1..].join("/"))
     }
+
 }
 
 impl Node for Directory {
     fn size(&self) -> usize {
         let mut size = 0;
 
-        for child in self.children.iter() {
+        for child in self.directories.iter() {
             size += child.size()
         }
 
@@ -82,31 +84,34 @@ impl Node for File {
 fn main() -> Result<()> {
     let args = Args::parse();
 
-    //let file = std::fs::File::open(args.filename)?;
-    //for line in BufReader::new(file).lines() {
-        //if let Ok(line) = line {
-            //let tokens: Vec<&str> = line.split(' ').collect();
+    let file = std::fs::File::open(args.filename)?;
+    let mut root = Rc::new(Directory::new("/".into(), None));
+    let mut cwd = &mut root;
+    for line in BufReader::new(file).lines() {
+        if let Ok(line) = line {
+            let tokens: Vec<&str> = line.split(' ').collect();
 
-            //match tokens[0] {
-                //"$" => {
-                    //match tokens[1] {
-                        //"cd" => {
-                            //if tokens[2] != "/" {
-                            //}
-                        //}
-                        //_ => ()
-                    //}
-                //}
-                //_ => panic!("Unknown token {}", tokens[0])
-            //}
-        //}
-    //}
+            match tokens[..] {
+                ["$", "ls"] => (),
+                ["$", "cd", dir] => {
+                    if dir != "/" {
 
-    let root = Rc::new(Directory::new("/".into(), None));
-    let a = Rc::new(Directory::new("a".into(), Some(root)));
+                    }
+                },
+                ["dir", dirname] => {
+                    let mut new = Rc::new(Directory::new(dirname.into(), Some(Rc::downgrade(&cwd.clone()))));
+                    cwd.directories.push((&new).clone())
+                }
+                _ => panic!("Unknown token {}", tokens[0])
+            }
+        }
+    }
 
-    // upgrade returns None
-    println!("{:?}", (*a.parent.borrow()).upgrade().unwrap().name());
+    //let root = Rc::new(Directory::new("/".into(), None));
+    //let a = Rc::new(Directory::new("a".into(), Some(Rc::downgrade(&root.clone()))));
+    //let b = Rc::new(Directory::new("b".into(), Some(Rc::downgrade(&a.clone()))));
+
+    //println!("{}", b.path());
 
     Ok(())
 }
